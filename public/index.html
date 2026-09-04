@@ -100,6 +100,16 @@
       color: white;
     }
 
+    .edit {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .delete {
+      background: #991b1b;
+      color: white;
+    }
+
     .status {
       text-align: center;
       padding: 10px;
@@ -166,6 +176,19 @@
     .stopped {
       color: #f87171;
       font-weight: bold;
+    }
+
+    .form-title {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    #addRobotForm {
+      display: none;
+      background: #273449;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 15px;
     }
 
     #result {
@@ -275,6 +298,69 @@
         Loading robots...
       </div>
 
+
+      <!-- ADD ROBOT BUTTON -->
+
+      <button class="robot" onclick="showAddRobot()">
+        ➕ ADD ROBOT
+      </button>
+
+
+      <!-- ADD ROBOT FORM -->
+
+      <div id="addRobotForm">
+
+        <h3 class="form-title">
+          Add New Robot
+        </h3>
+
+        <label>Robot Name</label>
+
+        <input
+          id="robotName"
+          placeholder="Example: Gold Master 5"
+        >
+
+
+        <label>Symbol</label>
+
+        <input
+          id="robotSymbol"
+          value="XAUUSD"
+          placeholder="Example: XAUUSD"
+        >
+
+
+        <label>Magic Number</label>
+
+        <input
+          id="robotMagic"
+          type="number"
+          placeholder="Example: 10004"
+        >
+
+
+        <label>Lot Size</label>
+
+        <input
+          id="robotLot"
+          type="number"
+          value="0.01"
+          step="0.01"
+        >
+
+
+        <button class="start" onclick="addRobot()">
+          ✅ SAVE ROBOT
+        </button>
+
+
+        <button class="stop" onclick="hideAddRobot()">
+          ❌ CANCEL
+        </button>
+
+      </div>
+
     </div>
 
 
@@ -347,12 +433,14 @@ const API_URL = window.location.origin;
 let API_KEY = "";
 
 
-/* LOGIN */
+/* ===============================
+   LOGIN
+================================ */
 
 async function login() {
 
   const key =
-    document.getElementById("apiKeyInput").value;
+    document.getElementById("apiKeyInput").value.trim();
 
   if (!key) {
 
@@ -404,7 +492,9 @@ async function login() {
 }
 
 
-/* MT5 STATUS */
+/* ===============================
+   MT5 STATUS
+================================ */
 
 async function refreshStatus() {
 
@@ -452,7 +542,9 @@ async function refreshStatus() {
 }
 
 
-/* LOAD ROBOTS */
+/* ===============================
+   LOAD ROBOTS
+================================ */
 
 async function loadRobots() {
 
@@ -482,6 +574,7 @@ async function loadRobots() {
       return;
     }
 
+
     data.robots.forEach(robot => {
 
       const card =
@@ -489,38 +582,51 @@ async function loadRobots() {
 
       card.className = "robot-card";
 
+
       const statusClass =
         robot.status === "RUNNING"
           ? "running"
           : "stopped";
+
 
       const statusIcon =
         robot.status === "RUNNING"
           ? "🟢"
           : "🔴";
 
+
       const action =
         robot.status === "RUNNING"
           ? "STOP"
           : "START";
+
 
       const buttonClass =
         robot.status === "RUNNING"
           ? "stop"
           : "start";
 
+
       card.innerHTML = `
 
         <div class="robot-name">
-          🤖 ${robot.name}
+          🤖 ${escapeHTML(robot.name)}
         </div>
 
         <div class="robot-info">
-          Symbol: ${robot.symbol}
+          Symbol: ${escapeHTML(robot.symbol)}
+        </div>
+
+        <div class="robot-info">
+          Magic Number: ${robot.magicNumber}
         </div>
 
         <div class="${statusClass}">
           ${statusIcon} ${robot.status}
+        </div>
+
+        <div class="robot-info">
+          Lot: ${robot.lot}
         </div>
 
         <div class="robot-info">
@@ -536,6 +642,20 @@ async function loadRobots() {
           onclick="controlRobot(${robot.id}, '${action}')"
         >
           ${action === "START" ? "▶️ START" : "⏹️ STOP"}
+        </button>
+
+        <button
+          class="edit"
+          onclick="editRobot(${robot.id})"
+        >
+          ✏️ EDIT
+        </button>
+
+        <button
+          class="delete"
+          onclick="deleteRobot(${robot.id})"
+        >
+          🗑️ DELETE
         </button>
 
       `;
@@ -554,7 +674,129 @@ async function loadRobots() {
 }
 
 
-/* CONTROL ROBOT */
+/* ===============================
+   SHOW ADD ROBOT
+================================ */
+
+function showAddRobot() {
+
+  document.getElementById("addRobotForm")
+    .style.display = "block";
+
+}
+
+
+/* ===============================
+   HIDE ADD ROBOT
+================================ */
+
+function hideAddRobot() {
+
+  document.getElementById("addRobotForm")
+    .style.display = "none";
+
+}
+
+
+/* ===============================
+   ADD ROBOT
+================================ */
+
+async function addRobot() {
+
+  const name =
+    document.getElementById("robotName")
+      .value.trim();
+
+  const symbol =
+    document.getElementById("robotSymbol")
+      .value.trim();
+
+  const magicNumber =
+    Number(
+      document.getElementById("robotMagic")
+        .value
+    );
+
+  const lot =
+    Number(
+      document.getElementById("robotLot")
+        .value
+    );
+
+
+  if (!name || !symbol || !magicNumber || !lot) {
+
+    document.getElementById("result").innerText =
+      "Please fill all robot fields.";
+
+    return;
+  }
+
+
+  try {
+
+    const response = await fetch(
+      `${API_URL}/robots`,
+      {
+
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": API_KEY
+        },
+
+        body: JSON.stringify({
+
+          name,
+          symbol,
+          magicNumber,
+          lot
+
+        })
+
+      }
+    );
+
+
+    const data =
+      await response.json();
+
+
+    document.getElementById("result").innerText =
+      data.message;
+
+
+    if (data.success) {
+
+      document.getElementById("robotName").value = "";
+
+      document.getElementById("robotSymbol").value = "XAUUSD";
+
+      document.getElementById("robotMagic").value = "";
+
+      document.getElementById("robotLot").value = "0.01";
+
+      hideAddRobot();
+
+      loadRobots();
+
+    }
+
+  } catch (error) {
+
+    document.getElementById("result").innerText =
+      "Connection error";
+
+  }
+
+}
+
+
+/* ===============================
+   CONTROL ROBOT
+================================ */
 
 async function controlRobot(id, action) {
 
@@ -578,10 +820,14 @@ async function controlRobot(id, action) {
       }
     );
 
-    const data = await response.json();
+
+    const data =
+      await response.json();
+
 
     document.getElementById("result").innerText =
       data.message;
+
 
     loadRobots();
 
@@ -595,7 +841,167 @@ async function controlRobot(id, action) {
 }
 
 
-/* BUY / SELL */
+/* ===============================
+   EDIT ROBOT
+================================ */
+
+async function editRobot(id) {
+
+  try {
+
+    const response = await fetch(
+      `${API_URL}/robots`,
+      {
+        headers: {
+          "x-api-key": API_KEY
+        }
+      }
+    );
+
+    const data = await response.json();
+
+    const robot =
+      data.robots.find(r => r.id === id);
+
+    if (!robot) {
+
+      document.getElementById("result").innerText =
+        "Robot not found.";
+
+      return;
+
+    }
+
+
+    const name =
+      prompt("Robot Name:", robot.name);
+
+    if (name === null) return;
+
+
+    const symbol =
+      prompt("Symbol:", robot.symbol);
+
+    if (symbol === null) return;
+
+
+    const magicNumber =
+      prompt(
+        "Magic Number:",
+        robot.magicNumber
+      );
+
+    if (magicNumber === null) return;
+
+
+    const lot =
+      prompt(
+        "Lot Size:",
+        robot.lot
+      );
+
+    if (lot === null) return;
+
+
+    const updateResponse =
+      await fetch(
+        `${API_URL}/robots/${id}`,
+        {
+
+          method: "PUT",
+
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_KEY
+          },
+
+          body: JSON.stringify({
+
+            name,
+            symbol,
+            magicNumber: Number(magicNumber),
+            lot: Number(lot)
+
+          })
+
+        }
+      );
+
+
+    const result =
+      await updateResponse.json();
+
+
+    document.getElementById("result").innerText =
+      result.message;
+
+
+    loadRobots();
+
+  } catch (error) {
+
+    document.getElementById("result").innerText =
+      "Connection error";
+
+  }
+
+}
+
+
+/* ===============================
+   DELETE ROBOT
+================================ */
+
+async function deleteRobot(id) {
+
+  const confirmed =
+    confirm(
+      "Are you sure you want to delete this robot?"
+    );
+
+  if (!confirmed) return;
+
+
+  try {
+
+    const response =
+      await fetch(
+        `${API_URL}/robots/${id}`,
+        {
+
+          method: "DELETE",
+
+          headers: {
+            "x-api-key": API_KEY
+          }
+
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    document.getElementById("result").innerText =
+      data.message;
+
+
+    loadRobots();
+
+  } catch (error) {
+
+    document.getElementById("result").innerText =
+      "Connection error";
+
+  }
+
+}
+
+
+/* ===============================
+   BUY / SELL
+================================ */
 
 async function sendOrder(type) {
 
@@ -603,31 +1009,40 @@ async function sendOrder(type) {
     document.getElementById("symbol").value;
 
   const lot =
-    Number(document.getElementById("lot").value);
+    Number(
+      document.getElementById("lot").value
+    );
+
 
   try {
 
-    const response = await fetch(
-      `${API_URL}/order`,
-      {
+    const response =
+      await fetch(
+        `${API_URL}/order`,
+        {
 
-        method: "POST",
+          method: "POST",
 
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": API_KEY
-        },
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_KEY
+          },
 
-        body: JSON.stringify({
-          type,
-          symbol,
-          lot
-        })
+          body: JSON.stringify({
 
-      }
-    );
+            type,
+            symbol,
+            lot
 
-    const data = await response.json();
+          })
+
+        }
+      );
+
+
+    const data =
+      await response.json();
+
 
     document.getElementById("result").innerText =
       JSON.stringify(data, null, 2);
@@ -642,27 +1057,33 @@ async function sendOrder(type) {
 }
 
 
-/* CLOSE ALL */
+/* ===============================
+   CLOSE ALL
+================================ */
 
 async function closeAll() {
 
   try {
 
-    const response = await fetch(
-      `${API_URL}/close-all`,
-      {
+    const response =
+      await fetch(
+        `${API_URL}/close-all`,
+        {
 
-        method: "POST",
+          method: "POST",
 
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": API_KEY
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_KEY
+          }
+
         }
+      );
 
-      }
-    );
 
-    const data = await response.json();
+    const data =
+      await response.json();
+
 
     document.getElementById("result").innerText =
       JSON.stringify(data, null, 2);
@@ -677,31 +1098,37 @@ async function closeAll() {
 }
 
 
-/* GENERAL ROBOT CONTROL */
+/* ===============================
+   GENERAL ROBOT CONTROL
+================================ */
 
 async function robot(action) {
 
   try {
 
-    const response = await fetch(
-      `${API_URL}/robot`,
-      {
+    const response =
+      await fetch(
+        `${API_URL}/robot`,
+        {
 
-        method: "POST",
+          method: "POST",
 
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": API_KEY
-        },
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": API_KEY
+          },
 
-        body: JSON.stringify({
-          action
-        })
+          body: JSON.stringify({
+            action
+          })
 
-      }
-    );
+        }
+      );
 
-    const data = await response.json();
+
+    const data =
+      await response.json();
+
 
     document.getElementById("result").innerText =
       JSON.stringify(data, null, 2);
@@ -712,10 +1139,26 @@ async function robot(action) {
       "Connection error";
 
   }
+
+}
+
+
+/* ===============================
+   SECURITY HELPER
+================================ */
+
+function escapeHTML(value) {
+
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 
 }
 
 </script>
 
 </body>
-      </html>
+        </html>
