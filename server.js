@@ -13,8 +13,12 @@ app.use(express.json());
 // Serve dashboard
 app.use(express.static(path.join(__dirname, "public")));
 
-// API key authentication
+// ===============================
+// API KEY AUTHENTICATION
+// ===============================
+
 function authenticate(req, res, next) {
+
   const key = req.headers["x-api-key"];
 
   if (!API_KEY) {
@@ -34,32 +38,150 @@ function authenticate(req, res, next) {
   next();
 }
 
-// Public health check
+// ===============================
+// ROBOT DATABASE
+// ===============================
+
+let robots = [
+  {
+    id: 1,
+    name: "Gold Master 5",
+    symbol: "XAUUSD",
+    status: "STOPPED",
+    profit: 0,
+    trades: 0
+  },
+  {
+    id: 2,
+    name: "Dark Moon",
+    symbol: "XAUUSD",
+    status: "STOPPED",
+    profit: 0,
+    trades: 0
+  },
+  {
+    id: 3,
+    name: "Trend Catcher",
+    symbol: "XAUUSD",
+    status: "STOPPED",
+    profit: 0,
+    trades: 0
+  }
+];
+
+// ===============================
+// HEALTH
+// ===============================
+
 app.get("/health", (req, res) => {
+
   res.json({
     status: "online",
     message: "Throne Hub MT5 Controller is running"
   });
+
 });
 
-// MT5 status
+// ===============================
+// MT5 STATUS
+// ===============================
+
 app.get("/status", authenticate, (req, res) => {
+
   res.json({
+
     status: "online",
+
     mt5: "disconnected",
-    message: "MT5 bridge is not connected yet"
+
+    message: "MT5 bridge is not connected yet",
+
+    robots: robots.length
+
   });
+
 });
 
+// ===============================
+// GET ALL ROBOTS
+// ===============================
+
+app.get("/robots", authenticate, (req, res) => {
+
+  res.json({
+    success: true,
+    robots
+  });
+
+});
+
+// ===============================
+// START / STOP ROBOT
+// ===============================
+
+app.post("/robots/:id", authenticate, (req, res) => {
+
+  const id = Number(req.params.id);
+
+  const { action } = req.body;
+
+  const robot = robots.find(r => r.id === id);
+
+  if (!robot) {
+
+    return res.status(404).json({
+      success: false,
+      message: "Robot not found"
+    });
+
+  }
+
+  if (!["START", "STOP"].includes(action)) {
+
+    return res.status(400).json({
+      success: false,
+      message: "Invalid robot action"
+    });
+
+  }
+
+  robot.status =
+    action === "START"
+      ? "RUNNING"
+      : "STOPPED";
+
+  console.log(
+    `ROBOT ${robot.name}: ${action}`
+  );
+
+  res.json({
+
+    success: true,
+
+    message:
+      `${robot.name} ${action}`,
+
+    robot
+
+  });
+
+});
+
+// ===============================
 // BUY / SELL
+// ===============================
+
 app.post("/order", authenticate, (req, res) => {
+
   const { type, symbol, lot } = req.body;
 
   if (!["BUY", "SELL"].includes(type)) {
+
     return res.status(400).json({
       success: false,
       message: "Invalid order type"
     });
+
   }
 
   console.log("ORDER:", {
@@ -69,43 +191,81 @@ app.post("/order", authenticate, (req, res) => {
   });
 
   res.json({
+
     success: true,
-    message: `${type} command received`,
+
+    message:
+      `${type} command received`,
+
     symbol,
     lot
+
   });
+
 });
 
+// ===============================
 // CLOSE ALL
+// ===============================
+
 app.post("/close-all", authenticate, (req, res) => {
-  console.log("CLOSE ALL command received");
+
+  console.log(
+    "CLOSE ALL command received"
+  );
 
   res.json({
+
     success: true,
-    message: "CLOSE_ALL command received"
+
+    message:
+      "CLOSE_ALL command received"
+
   });
+
 });
 
-// START / STOP ROBOT
+// ===============================
+// LEGACY ROBOT ENDPOINT
+// ===============================
+
 app.post("/robot", authenticate, (req, res) => {
+
   const { action } = req.body;
 
   if (!["START", "STOP"].includes(action)) {
+
     return res.status(400).json({
       success: false,
       message: "Invalid robot action"
     });
+
   }
 
-  console.log("ROBOT:", action);
+  console.log(
+    "ROBOT:",
+    action
+  );
 
   res.json({
+
     success: true,
-    message: `Robot ${action} command received`
+
+    message:
+      `Robot ${action} command received`
+
   });
+
 });
 
-// Start server
+// ===============================
+// START SERVER
+// ===============================
+
 app.listen(PORT, () => {
-  console.log(`Throne Controller running on port ${PORT}`);
+
+  console.log(
+    `Throne Controller running on port ${PORT}`
+  );
+
 });
