@@ -90,6 +90,16 @@
       color: white;
     }
 
+    .start {
+      background: #22c55e;
+      color: white;
+    }
+
+    .stop {
+      background: #ef4444;
+      color: white;
+    }
+
     .status {
       text-align: center;
       padding: 10px;
@@ -127,6 +137,34 @@
 
     .stat-value {
       font-size: 20px;
+      font-weight: bold;
+    }
+
+    .robot-card {
+      background: #273449;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+    }
+
+    .robot-name {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .robot-info {
+      color: #9ca3af;
+      margin: 7px 0;
+      font-size: 14px;
+    }
+
+    .running {
+      color: #22c55e;
+      font-weight: bold;
+    }
+
+    .stopped {
+      color: #f87171;
       font-weight: bold;
     }
 
@@ -176,6 +214,7 @@
 
     <h1>👑 Throne Hub</h1>
 
+
     <!-- MT5 STATUS -->
 
     <div class="box">
@@ -202,54 +241,23 @@
       <div class="account-grid">
 
         <div class="stat">
-
-          <div class="stat-title">
-            Balance
-          </div>
-
-          <div class="stat-value" id="balance">
-            --
-          </div>
-
+          <div class="stat-title">Balance</div>
+          <div class="stat-value" id="balance">--</div>
         </div>
 
-
         <div class="stat">
-
-          <div class="stat-title">
-            Equity
-          </div>
-
-          <div class="stat-value" id="equity">
-            --
-          </div>
-
+          <div class="stat-title">Equity</div>
+          <div class="stat-value" id="equity">--</div>
         </div>
 
-
         <div class="stat">
-
-          <div class="stat-title">
-            Floating P/L
-          </div>
-
-          <div class="stat-value" id="floatingPL">
-            --
-          </div>
-
+          <div class="stat-title">Floating P/L</div>
+          <div class="stat-value" id="floatingPL">--</div>
         </div>
 
-
         <div class="stat">
-
-          <div class="stat-title">
-            Open Trades
-          </div>
-
-          <div class="stat-value" id="openTrades">
-            0
-          </div>
-
+          <div class="stat-title">Open Trades</div>
+          <div class="stat-value" id="openTrades">0</div>
         </div>
 
       </div>
@@ -257,11 +265,24 @@
     </div>
 
 
-    <!-- TRADING -->
+    <!-- MY ROBOTS -->
 
     <div class="box">
 
-      <h2>📈 Trading</h2>
+      <h2>🤖 MY ROBOTS</h2>
+
+      <div id="robotsContainer">
+        Loading robots...
+      </div>
+
+    </div>
+
+
+    <!-- MANUAL TRADING -->
+
+    <div class="box">
+
+      <h2>📈 Manual Trading</h2>
 
       <label>Symbol</label>
 
@@ -364,6 +385,8 @@ async function login() {
 
       refreshStatus();
 
+      loadRobots();
+
     } else {
 
       document.getElementById("loginResult").innerText =
@@ -423,6 +446,149 @@ async function refreshStatus() {
 
     document.getElementById("mt5Status").innerText =
       "⚠️ Connection Error";
+
+  }
+
+}
+
+
+/* LOAD ROBOTS */
+
+async function loadRobots() {
+
+  try {
+
+    const response = await fetch(
+      `${API_URL}/robots`,
+      {
+        headers: {
+          "x-api-key": API_KEY
+        }
+      }
+    );
+
+    const data = await response.json();
+
+    const container =
+      document.getElementById("robotsContainer");
+
+    container.innerHTML = "";
+
+    if (!data.robots || data.robots.length === 0) {
+
+      container.innerHTML =
+        "No robots available.";
+
+      return;
+    }
+
+    data.robots.forEach(robot => {
+
+      const card =
+        document.createElement("div");
+
+      card.className = "robot-card";
+
+      const statusClass =
+        robot.status === "RUNNING"
+          ? "running"
+          : "stopped";
+
+      const statusIcon =
+        robot.status === "RUNNING"
+          ? "🟢"
+          : "🔴";
+
+      const action =
+        robot.status === "RUNNING"
+          ? "STOP"
+          : "START";
+
+      const buttonClass =
+        robot.status === "RUNNING"
+          ? "stop"
+          : "start";
+
+      card.innerHTML = `
+
+        <div class="robot-name">
+          🤖 ${robot.name}
+        </div>
+
+        <div class="robot-info">
+          Symbol: ${robot.symbol}
+        </div>
+
+        <div class="${statusClass}">
+          ${statusIcon} ${robot.status}
+        </div>
+
+        <div class="robot-info">
+          P/L: $${robot.profit}
+        </div>
+
+        <div class="robot-info">
+          Trades: ${robot.trades}
+        </div>
+
+        <button
+          class="${buttonClass}"
+          onclick="controlRobot(${robot.id}, '${action}')"
+        >
+          ${action === "START" ? "▶️ START" : "⏹️ STOP"}
+        </button>
+
+      `;
+
+      container.appendChild(card);
+
+    });
+
+  } catch (error) {
+
+    document.getElementById("robotsContainer").innerText =
+      "Unable to load robots.";
+
+  }
+
+}
+
+
+/* CONTROL ROBOT */
+
+async function controlRobot(id, action) {
+
+  try {
+
+    const response = await fetch(
+      `${API_URL}/robots/${id}`,
+      {
+
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": API_KEY
+        },
+
+        body: JSON.stringify({
+          action
+        })
+
+      }
+    );
+
+    const data = await response.json();
+
+    document.getElementById("result").innerText =
+      data.message;
+
+    loadRobots();
+
+  } catch (error) {
+
+    document.getElementById("result").innerText =
+      "Connection error";
 
   }
 
@@ -511,7 +677,7 @@ async function closeAll() {
 }
 
 
-/* ROBOT */
+/* GENERAL ROBOT CONTROL */
 
 async function robot(action) {
 
@@ -552,4 +718,4 @@ async function robot(action) {
 </script>
 
 </body>
-        </html>
+      </html>
