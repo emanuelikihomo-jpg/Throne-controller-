@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Throne Controller</title>
-
-  <style>
+  <title>Throne Controller</title>  <style>
     body {
       font-family: Arial, sans-serif;
       background: #111827;
@@ -19,21 +16,25 @@
       margin: auto;
     }
 
-    h1 {
-      text-align: center;
-      margin-bottom: 5px;
+    .login-box, .dashboard {
+      background: #1f2937;
+      padding: 25px;
+      border-radius: 15px;
+      margin-top: 40px;
     }
 
-    .status {
+    .dashboard {
+      display: none;
+    }
+
+    h1, h2 {
       text-align: center;
-      margin-bottom: 25px;
-      color: #22c55e;
     }
 
     .card {
-      background: #1f2937;
+      background: #273449;
       padding: 20px;
-      border-radius: 15px;
+      border-radius: 12px;
       margin-bottom: 20px;
     }
 
@@ -42,7 +43,7 @@
       margin-bottom: 6px;
     }
 
-    input, select {
+    input {
       width: 100%;
       padding: 12px;
       margin-bottom: 15px;
@@ -62,6 +63,11 @@
       cursor: pointer;
     }
 
+    .login-btn {
+      background: #3b82f6;
+      color: white;
+    }
+
     .buy {
       background: #22c55e;
       color: white;
@@ -78,8 +84,14 @@
     }
 
     .robot {
-      background: #3b82f6;
+      background: #6366f1;
       color: white;
+    }
+
+    .status {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #22c55e;
     }
 
     #result {
@@ -89,160 +101,195 @@
       border-radius: 8px;
       word-wrap: break-word;
     }
-  </style>
-</head>
+  </style></head><body><div class="container">  <!-- LOGIN -->  <div class="login-box" id="loginBox"><h1>👑 Throne Hub</h1>
+<h2>Controller Login</h2>
 
-<body>
+<label>API Key</label>
 
-<div class="container">
+<input
+  type="password"
+  id="apiKeyInput"
+  placeholder="Enter your API Key"
+>
 
-  <h1>👑 Throne Controller</h1>
+<button class="login-btn" onclick="login()">
+  LOGIN
+</button>
 
-  <div class="status">
-    ● Controller Online
-  </div>
+<div id="loginResult"></div>
 
-  <div class="card">
+  </div>  <!-- DASHBOARD -->  <div class="dashboard" id="dashboard"><h1>👑 Throne Controller</h1>
 
-    <label>Symbol</label>
-    <input id="symbol" value="XAUUSD">
+<div class="status">
+  ● Controller Online
+</div>
 
-    <label>Lot Size</label>
-    <input id="lot" type="number" value="0.01" step="0.01">
+<div class="card">
 
-    <button class="buy" onclick="sendOrder('BUY')">
-      🟢 BUY
-    </button>
+  <label>Symbol</label>
+  <input id="symbol" value="XAUUSD">
 
-    <button class="sell" onclick="sendOrder('SELL')">
-      🔴 SELL
-    </button>
+  <label>Lot Size</label>
+  <input id="lot" type="number" value="0.01" step="0.01">
 
-  </div>
+  <button class="buy" onclick="sendOrder('BUY')">
+    🟢 BUY
+  </button>
 
-  <div class="card">
+  <button class="sell" onclick="sendOrder('SELL')">
+    🔴 SELL
+  </button>
 
-    <button class="close" onclick="closeAll()">
-      🛑 CLOSE ALL
-    </button>
+</div>
 
-    <button class="robot" onclick="robot('START')">
-      ▶️ START ROBOT
-    </button>
+<div class="card">
 
-    <button class="robot" onclick="robot('STOP')">
-      ⏹️ STOP ROBOT
-    </button>
+  <button class="close" onclick="closeAll()">
+    🛑 CLOSE ALL
+  </button>
 
-    <div id="result">
-      Waiting for command...
-    </div>
+  <button class="robot" onclick="robot('START')">
+    ▶️ START ROBOT
+  </button>
 
+  <button class="robot" onclick="robot('STOP')">
+    ⏹️ STOP ROBOT
+  </button>
+
+  <div id="result">
+    Waiting for command...
   </div>
 
 </div>
 
-<script>
+  </div></div><script>
 
-const API_URL = "https://throne-controller.onrender.com";
+const API_URL = window.location.origin;
 
-// API key will be added later
-const API_KEY = "";
+let API_KEY = "";
+
+
+async function login() {
+
+  const key = document.getElementById("apiKeyInput").value;
+
+  if (!key) {
+    document.getElementById("loginResult").innerText =
+      "Please enter API Key";
+    return;
+  }
+
+  try {
+
+    const response = await fetch(`${API_URL}/status`, {
+
+      headers: {
+        "x-api-key": key
+      }
+
+    });
+
+    if (response.ok) {
+
+      API_KEY = key;
+
+      document.getElementById("loginBox").style.display = "none";
+      document.getElementById("dashboard").style.display = "block";
+
+    } else {
+
+      document.getElementById("loginResult").innerText =
+        "Invalid API Key";
+
+    }
+
+  } catch (error) {
+
+    document.getElementById("loginResult").innerText =
+      "Connection error";
+
+  }
+
+}
+
 
 async function sendOrder(type) {
 
   const symbol = document.getElementById("symbol").value;
-  const lot = Number(document.getElementById("lot").value);
 
-  try {
+  const lot = Number(
+    document.getElementById("lot").value
+  );
 
-    const response = await fetch(`${API_URL}/order`, {
-      method: "POST",
+  const response = await fetch(`${API_URL}/order`, {
 
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": API_KEY
-      },
+    method: "POST",
 
-      body: JSON.stringify({
-        type: type,
-        symbol: symbol,
-        lot: lot
-      })
-    });
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": API_KEY
+    },
 
-    const data = await response.json();
+    body: JSON.stringify({
+      type,
+      symbol,
+      lot
+    })
 
-    document.getElementById("result").innerText =
-      JSON.stringify(data, null, 2);
+  });
 
-  } catch (error) {
+  const data = await response.json();
 
-    document.getElementById("result").innerText =
-      "Connection error: " + error.message;
+  document.getElementById("result").innerText =
+    JSON.stringify(data, null, 2);
 
-  }
 }
 
 
 async function closeAll() {
 
-  try {
+  const response = await fetch(`${API_URL}/close-all`, {
 
-    const response = await fetch(`${API_URL}/close-all`, {
-      method: "POST",
+    method: "POST",
 
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": API_KEY
-      }
-    });
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": API_KEY
+    }
 
-    const data = await response.json();
+  });
 
-    document.getElementById("result").innerText =
-      JSON.stringify(data, null, 2);
+  const data = await response.json();
 
-  } catch (error) {
+  document.getElementById("result").innerText =
+    JSON.stringify(data, null, 2);
 
-    document.getElementById("result").innerText =
-      "Connection error: " + error.message;
-
-  }
 }
 
 
 async function robot(action) {
 
-  try {
+  const response = await fetch(`${API_URL}/robot`, {
 
-    const response = await fetch(`${API_URL}/robot`, {
-      method: "POST",
+    method: "POST",
 
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": API_KEY
-      },
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": API_KEY
+    },
 
-      body: JSON.stringify({
-        action: action
-      })
-    });
+    body: JSON.stringify({
+      action
+    })
 
-    const data = await response.json();
+  });
 
-    document.getElementById("result").innerText =
-      JSON.stringify(data, null, 2);
+  const data = await response.json();
 
-  } catch (error) {
+  document.getElementById("result").innerText =
+    JSON.stringify(data, null, 2);
 
-    document.getElementById("result").innerText =
-      "Connection error: " + error.message;
-
-  }
 }
 
-</script>
-
-</body>
-  </html>
+</script></body>
+    </html>
