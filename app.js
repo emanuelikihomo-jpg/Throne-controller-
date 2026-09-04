@@ -1,25 +1,73 @@
+// Throne Hub MT5 Controller
 
-// MT5 Mobile Controller
+const API_URL = "https://throne-controller.onrender.com";
+
 const app = {
   name: "Throne Hub",
   status: "Disconnected",
 
-  connect() {
-    this.status = "Connected";
-    console.log("MT5 connection requested");
+  async connect() {
+    try {
+      const response = await fetch(`${API_URL}/status`);
+      const data = await response.json();
+
+      this.status = data.mt5;
+      console.log("Server connected:", data);
+
+      return data;
+    } catch (error) {
+      this.status = "Connection failed";
+      console.error("Connection error:", error);
+    }
   },
 
-  buy() {
-    console.log("BUY order requested");
+  async buy() {
+    console.log("BUY request");
+    return sendOrder("BUY");
   },
 
-  sell() {
-    console.log("SELL order requested");
+  async sell() {
+    console.log("SELL request");
+    return sendOrder("SELL");
   },
 
-  closeAll() {
-    console.log("Close all orders requested");
+  async closeAll() {
+    console.log("CLOSE ALL request");
+
+    try {
+      const response = await fetch(`${API_URL}/close-all`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+
+      return await response.json();
+    } catch (error) {
+      console.error("Close all error:", error);
+    }
   }
 };
 
-console.log("Throne Hub MT5 Controller loaded");
+async function sendOrder(type) {
+  try {
+    const response = await fetch(`${API_URL}/order`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        type: type
+      })
+    });
+
+    const data = await response.json();
+    console.log("Server response:", data);
+
+    return data;
+  } catch (error) {
+    console.error("Order error:", error);
+  }
+}
+
+console.log("Throne Hub connected to backend:", API_URL);
