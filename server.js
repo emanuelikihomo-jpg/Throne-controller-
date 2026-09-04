@@ -10,11 +10,10 @@ const API_KEY = process.env.THRONE_API_KEY;
 app.use(cors());
 app.use(express.json());
 
-// Serve dashboard
 app.use(express.static(path.join(__dirname, "public")));
 
 // ===============================
-// API KEY AUTHENTICATION
+// AUTHENTICATION
 // ===============================
 
 function authenticate(req, res, next) {
@@ -39,7 +38,7 @@ function authenticate(req, res, next) {
 }
 
 // ===============================
-// ROBOT DATABASE
+// ROBOTS
 // ===============================
 
 let robots = [
@@ -47,6 +46,8 @@ let robots = [
     id: 1,
     name: "Gold Master 5",
     symbol: "XAUUSD",
+    magicNumber: 10001,
+    lot: 0.01,
     status: "STOPPED",
     profit: 0,
     trades: 0
@@ -55,6 +56,8 @@ let robots = [
     id: 2,
     name: "Dark Moon",
     symbol: "XAUUSD",
+    magicNumber: 10002,
+    lot: 0.01,
     status: "STOPPED",
     profit: 0,
     trades: 0
@@ -63,11 +66,15 @@ let robots = [
     id: 3,
     name: "Trend Catcher",
     symbol: "XAUUSD",
+    magicNumber: 10003,
+    lot: 0.01,
     status: "STOPPED",
     profit: 0,
     trades: 0
   }
 ];
+
+let nextRobotId = 4;
 
 // ===============================
 // HEALTH
@@ -83,7 +90,7 @@ app.get("/health", (req, res) => {
 });
 
 // ===============================
-// MT5 STATUS
+// STATUS
 // ===============================
 
 app.get("/status", authenticate, (req, res) => {
@@ -103,7 +110,7 @@ app.get("/status", authenticate, (req, res) => {
 });
 
 // ===============================
-// GET ALL ROBOTS
+// GET ROBOTS
 // ===============================
 
 app.get("/robots", authenticate, (req, res) => {
@@ -111,6 +118,86 @@ app.get("/robots", authenticate, (req, res) => {
   res.json({
     success: true,
     robots
+  });
+
+});
+
+// ===============================
+// ADD ROBOT
+// ===============================
+
+app.post("/robots", authenticate, (req, res) => {
+
+  const {
+    name,
+    symbol,
+    magicNumber,
+    lot
+  } = req.body;
+
+  if (!name || !symbol || !magicNumber || !lot) {
+
+    return res.status(400).json({
+      success: false,
+      message:
+        "name, symbol, magicNumber and lot are required"
+    });
+
+  }
+
+  const existingMagic =
+    robots.find(
+      robot =>
+        Number(robot.magicNumber) ===
+        Number(magicNumber)
+    );
+
+  if (existingMagic) {
+
+    return res.status(400).json({
+      success: false,
+      message:
+        "Magic Number already exists"
+    });
+
+  }
+
+  const newRobot = {
+
+    id: nextRobotId++,
+
+    name: String(name),
+
+    symbol: String(symbol).toUpperCase(),
+
+    magicNumber: Number(magicNumber),
+
+    lot: Number(lot),
+
+    status: "STOPPED",
+
+    profit: 0,
+
+    trades: 0
+
+  };
+
+  robots.push(newRobot);
+
+  console.log(
+    "ROBOT ADDED:",
+    newRobot
+  );
+
+  res.json({
+
+    success: true,
+
+    message:
+      `${newRobot.name} added successfully`,
+
+    robot: newRobot
+
   });
 
 });
@@ -125,7 +212,8 @@ app.post("/robots/:id", authenticate, (req, res) => {
 
   const { action } = req.body;
 
-  const robot = robots.find(r => r.id === id);
+  const robot =
+    robots.find(r => r.id === id);
 
   if (!robot) {
 
@@ -168,12 +256,108 @@ app.post("/robots/:id", authenticate, (req, res) => {
 });
 
 // ===============================
+// DELETE ROBOT
+// ===============================
+
+app.delete("/robots/:id", authenticate, (req, res) => {
+
+  const id = Number(req.params.id);
+
+  const index =
+    robots.findIndex(
+      robot => robot.id === id
+    );
+
+  if (index === -1) {
+
+    return res.status(404).json({
+      success: false,
+      message: "Robot not found"
+    });
+
+  }
+
+  const removedRobot =
+    robots.splice(index, 1)[0];
+
+  res.json({
+
+    success: true,
+
+    message:
+      `${removedRobot.name} deleted`,
+
+    robot: removedRobot
+
+  });
+
+});
+
+// ===============================
+// UPDATE ROBOT
+// ===============================
+
+app.put("/robots/:id", authenticate, (req, res) => {
+
+  const id = Number(req.params.id);
+
+  const robot =
+    robots.find(r => r.id === id);
+
+  if (!robot) {
+
+    return res.status(404).json({
+      success: false,
+      message: "Robot not found"
+    });
+
+  }
+
+  const {
+    name,
+    symbol,
+    magicNumber,
+    lot
+  } = req.body;
+
+  if (name !== undefined)
+    robot.name = String(name);
+
+  if (symbol !== undefined)
+    robot.symbol =
+      String(symbol).toUpperCase();
+
+  if (magicNumber !== undefined)
+    robot.magicNumber =
+      Number(magicNumber);
+
+  if (lot !== undefined)
+    robot.lot = Number(lot);
+
+  res.json({
+
+    success: true,
+
+    message:
+      `${robot.name} updated successfully`,
+
+    robot
+
+  });
+
+});
+
+// ===============================
 // BUY / SELL
 // ===============================
 
 app.post("/order", authenticate, (req, res) => {
 
-  const { type, symbol, lot } = req.body;
+  const {
+    type,
+    symbol,
+    lot
+  } = req.body;
 
   if (!["BUY", "SELL"].includes(type)) {
 
@@ -198,6 +382,7 @@ app.post("/order", authenticate, (req, res) => {
       `${type} command received`,
 
     symbol,
+
     lot
 
   });
@@ -226,7 +411,7 @@ app.post("/close-all", authenticate, (req, res) => {
 });
 
 // ===============================
-// LEGACY ROBOT ENDPOINT
+// LEGACY ROBOT CONTROL
 // ===============================
 
 app.post("/robot", authenticate, (req, res) => {
@@ -259,7 +444,7 @@ app.post("/robot", authenticate, (req, res) => {
 });
 
 // ===============================
-// START SERVER
+// SERVER
 // ===============================
 
 app.listen(PORT, () => {
