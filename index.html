@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>THRONE CONTROL</title>
+
   <style>
     * {
       box-sizing: border-box;
@@ -29,10 +30,18 @@
 
     .status {
       text-align: center;
-      padding: 10px;
+      padding: 12px;
       background: #222;
       border-radius: 10px;
       margin-bottom: 20px;
+    }
+
+    .connected {
+      color: #2ecc71;
+    }
+
+    .disconnected {
+      color: #e74c3c;
     }
 
     label {
@@ -58,6 +67,10 @@
       font-size: 18px;
       font-weight: bold;
       cursor: pointer;
+    }
+
+    button:active {
+      transform: scale(0.98);
     }
 
     .buy {
@@ -93,7 +106,7 @@
 
   <h1>👑 THRONE CONTROL</h1>
 
-  <div class="status">
+  <div class="status disconnected" id="status">
     MT5 STATUS: 🔴 DISCONNECTED
   </div>
 
@@ -101,7 +114,7 @@
   <input type="text" id="symbol" value="XAUUSD">
 
   <label>Lot Size</label>
-  <input type="number" id="lot" value="0.01" step="0.01">
+  <input type="number" id="lot" value="0.01" step="0.01" min="0.01">
 
   <button class="buy" onclick="sendCommand('BUY')">
     🟢 BUY
@@ -127,24 +140,142 @@
 
 <script>
 
-function sendCommand(command) {
+const API_URL = "https://throne-controller.onrender.com";
 
-  const symbol = document.getElementById("symbol").value;
+async function checkConnection() {
 
-  const lot = document.getElementById("lot").value;
+  const status = document.getElementById("status");
 
-  alert(
-    "Command: " + command +
-    "\nSymbol: " + symbol +
-    "\nLot: " + lot
-  );
+  try {
 
-  // Later this will send commands
-  // to our MT5 Bridge.
+    const response = await fetch(`${API_URL}/status`);
 
+    const data = await response.json();
+
+    status.innerHTML = "MT5 STATUS: 🟡 SERVER ONLINE";
+    status.className = "status connected";
+
+    console.log("Server:", data);
+
+  } catch (error) {
+
+    status.innerHTML = "MT5 STATUS: 🔴 SERVER OFFLINE";
+    status.className = "status disconnected";
+
+    console.error("Connection error:", error);
+
+  }
 }
 
+
+async function sendCommand(command) {
+
+  const symbol = document.getElementById("symbol").value.trim();
+
+  const lot = Number(document.getElementById("lot").value);
+
+  if (!symbol) {
+    alert("Please enter a trading symbol.");
+    return;
+  }
+
+  if (!lot || lot <= 0) {
+    alert("Please enter a valid lot size.");
+    return;
+  }
+
+  let url = "";
+  let body = {};
+
+  if (command === "BUY" || command === "SELL") {
+
+    url = `${API_URL}/order`;
+
+    body = {
+      type: command,
+      symbol: symbol,
+      lot: lot
+    };
+
+  }
+
+  else if (command === "CLOSE_ALL") {
+
+    url = `${API_URL}/close-all`;
+
+    body = {};
+
+  }
+
+  else if (command === "START_ROBOT") {
+
+    url = `${API_URL}/robot`;
+
+    body = {
+      action: "START"
+    };
+
+  }
+
+  else if (command === "STOP_ROBOT") {
+
+    url = `${API_URL}/robot`;
+
+    body = {
+      action: "STOP"
+    };
+
+  }
+
+  try {
+
+    const response = await fetch(url, {
+
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify(body)
+
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+
+      alert(
+        "✅ COMMAND SENT\n\n" +
+        data.message
+      );
+
+    } else {
+
+      alert(
+        "⚠️ COMMAND FAILED\n\n" +
+        (data.message || "Unknown error")
+      );
+
+    }
+
+  } catch (error) {
+
+    alert(
+      "❌ CONNECTION FAILED\n\n" +
+      "Server haipatikani."
+    );
+
+    console.error(error);
+
+  }
+}
+
+
+checkConnection();
+
 </script>
-<script src="app.js"></script>
+
 </body>
   </html>
+  
