@@ -1,24 +1,19 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// API security
 const API_KEY = process.env.THRONE_API_KEY;
 
 app.use(cors());
 app.use(express.json());
 
-// Health check — public
-app.get("/", (req, res) => {
-  res.json({
-    status: "online",
-    message: "Throne Hub MT5 Controller is running"
-  });
-});
+// Serve dashboard
+app.use(express.static(path.join(__dirname, "public")));
 
-// API key middleware
+// API key authentication
 function authenticate(req, res, next) {
   const key = req.headers["x-api-key"];
 
@@ -39,6 +34,14 @@ function authenticate(req, res, next) {
   next();
 }
 
+// Public health check
+app.get("/health", (req, res) => {
+  res.json({
+    status: "online",
+    message: "Throne Hub MT5 Controller is running"
+  });
+});
+
 // MT5 status
 app.get("/status", authenticate, (req, res) => {
   res.json({
@@ -48,7 +51,7 @@ app.get("/status", authenticate, (req, res) => {
   });
 });
 
-// Send BUY / SELL order
+// BUY / SELL
 app.post("/order", authenticate, (req, res) => {
   const { type, symbol, lot } = req.body;
 
@@ -73,7 +76,7 @@ app.post("/order", authenticate, (req, res) => {
   });
 });
 
-// Close all trades
+// CLOSE ALL
 app.post("/close-all", authenticate, (req, res) => {
   console.log("CLOSE ALL command received");
 
@@ -83,7 +86,7 @@ app.post("/close-all", authenticate, (req, res) => {
   });
 });
 
-// Start / Stop robot
+// START / STOP ROBOT
 app.post("/robot", authenticate, (req, res) => {
   const { action } = req.body;
 
@@ -102,6 +105,7 @@ app.post("/robot", authenticate, (req, res) => {
   });
 });
 
+// Start server
 app.listen(PORT, () => {
   console.log(`Throne Controller running on port ${PORT}`);
 });
