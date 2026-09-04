@@ -1,8 +1,13 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Throne Controller</title>  <style>
+
+  <title>Throne Hub</title>
+
+  <style>
+
     body {
       font-family: Arial, sans-serif;
       background: #111827;
@@ -12,15 +17,19 @@
     }
 
     .container {
-      max-width: 500px;
+      max-width: 520px;
       margin: auto;
     }
 
-    .login-box, .dashboard {
+    .box {
       background: #1f2937;
-      padding: 25px;
+      padding: 20px;
       border-radius: 15px;
-      margin-top: 40px;
+      margin-top: 20px;
+    }
+
+    .login-box {
+      margin-top: 60px;
     }
 
     .dashboard {
@@ -31,24 +40,12 @@
       text-align: center;
     }
 
-    .card {
-      background: #273449;
-      padding: 20px;
-      border-radius: 12px;
-      margin-bottom: 20px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 6px;
-    }
-
     input {
       width: 100%;
       padding: 12px;
-      margin-bottom: 15px;
-      border-radius: 8px;
+      margin: 8px 0 15px;
       border: none;
+      border-radius: 8px;
       box-sizing: border-box;
     }
 
@@ -63,7 +60,7 @@
       cursor: pointer;
     }
 
-    .login-btn {
+    .login {
       background: #3b82f6;
       color: white;
     }
@@ -88,10 +85,49 @@
       color: white;
     }
 
+    .refresh {
+      background: #374151;
+      color: white;
+    }
+
     .status {
       text-align: center;
-      margin-bottom: 20px;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      background: #374151;
+    }
+
+    .connected {
       color: #22c55e;
+    }
+
+    .disconnected {
+      color: #f87171;
+    }
+
+    .account-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .stat {
+      background: #273449;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .stat-title {
+      font-size: 13px;
+      color: #9ca3af;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 20px;
+      font-weight: bold;
     }
 
     #result {
@@ -101,100 +137,232 @@
       border-radius: 8px;
       word-wrap: break-word;
     }
-  </style></head><body><div class="container">  <!-- LOGIN -->  <div class="login-box" id="loginBox"><h1>👑 Throne Hub</h1>
-<h2>Controller Login</h2>
 
-<label>API Key</label>
+  </style>
+</head>
 
-<input
-  type="password"
-  id="apiKeyInput"
-  placeholder="Enter your API Key"
->
+<body>
 
-<button class="login-btn" onclick="login()">
-  LOGIN
-</button>
+<div class="container">
 
-<div id="loginResult"></div>
+  <!-- LOGIN -->
 
-  </div>  <!-- DASHBOARD -->  <div class="dashboard" id="dashboard"><h1>👑 Throne Controller</h1>
+  <div class="box login-box" id="loginBox">
 
-<div class="status">
-  ● Controller Online
-</div>
+    <h1>👑 Throne Hub</h1>
 
-<div class="card">
+    <h2>Controller Login</h2>
 
-  <label>Symbol</label>
-  <input id="symbol" value="XAUUSD">
+    <label>API Key</label>
 
-  <label>Lot Size</label>
-  <input id="lot" type="number" value="0.01" step="0.01">
+    <input
+      type="password"
+      id="apiKeyInput"
+      placeholder="Enter your API Key"
+    >
 
-  <button class="buy" onclick="sendOrder('BUY')">
-    🟢 BUY
-  </button>
+    <button class="login" onclick="login()">
+      LOGIN
+    </button>
 
-  <button class="sell" onclick="sendOrder('SELL')">
-    🔴 SELL
-  </button>
+    <div id="loginResult"></div>
 
-</div>
+  </div>
 
-<div class="card">
 
-  <button class="close" onclick="closeAll()">
-    🛑 CLOSE ALL
-  </button>
+  <!-- DASHBOARD -->
 
-  <button class="robot" onclick="robot('START')">
-    ▶️ START ROBOT
-  </button>
+  <div class="dashboard" id="dashboard">
 
-  <button class="robot" onclick="robot('STOP')">
-    ⏹️ STOP ROBOT
-  </button>
+    <h1>👑 Throne Hub</h1>
 
-  <div id="result">
-    Waiting for command...
+    <!-- MT5 STATUS -->
+
+    <div class="box">
+
+      <h2>MT5 Connection</h2>
+
+      <div class="status disconnected" id="mt5Status">
+        🔴 MT5 Disconnected
+      </div>
+
+      <button class="refresh" onclick="refreshStatus()">
+        🔄 Refresh Status
+      </button>
+
+    </div>
+
+
+    <!-- ACCOUNT -->
+
+    <div class="box">
+
+      <h2>📊 Account Overview</h2>
+
+      <div class="account-grid">
+
+        <div class="stat">
+
+          <div class="stat-title">
+            Balance
+          </div>
+
+          <div class="stat-value" id="balance">
+            --
+          </div>
+
+        </div>
+
+
+        <div class="stat">
+
+          <div class="stat-title">
+            Equity
+          </div>
+
+          <div class="stat-value" id="equity">
+            --
+          </div>
+
+        </div>
+
+
+        <div class="stat">
+
+          <div class="stat-title">
+            Floating P/L
+          </div>
+
+          <div class="stat-value" id="floatingPL">
+            --
+          </div>
+
+        </div>
+
+
+        <div class="stat">
+
+          <div class="stat-title">
+            Open Trades
+          </div>
+
+          <div class="stat-value" id="openTrades">
+            0
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- TRADING -->
+
+    <div class="box">
+
+      <h2>📈 Trading</h2>
+
+      <label>Symbol</label>
+
+      <input
+        id="symbol"
+        value="XAUUSD"
+      >
+
+      <label>Lot Size</label>
+
+      <input
+        id="lot"
+        type="number"
+        value="0.01"
+        step="0.01"
+      >
+
+      <button class="buy" onclick="sendOrder('BUY')">
+        🟢 BUY
+      </button>
+
+      <button class="sell" onclick="sendOrder('SELL')">
+        🔴 SELL
+      </button>
+
+    </div>
+
+
+    <!-- CONTROLS -->
+
+    <div class="box">
+
+      <h2>⚙️ Controls</h2>
+
+      <button class="close" onclick="closeAll()">
+        🛑 CLOSE ALL
+      </button>
+
+      <button class="robot" onclick="robot('START')">
+        ▶️ START ROBOT
+      </button>
+
+      <button class="robot" onclick="robot('STOP')">
+        ⏹️ STOP ROBOT
+      </button>
+
+      <div id="result">
+        Waiting for command...
+      </div>
+
+    </div>
+
   </div>
 
 </div>
 
-  </div></div><script>
+
+<script>
 
 const API_URL = window.location.origin;
 
 let API_KEY = "";
 
 
+/* LOGIN */
+
 async function login() {
 
-  const key = document.getElementById("apiKeyInput").value;
+  const key =
+    document.getElementById("apiKeyInput").value;
 
   if (!key) {
+
     document.getElementById("loginResult").innerText =
       "Please enter API Key";
+
     return;
   }
 
   try {
 
-    const response = await fetch(`${API_URL}/status`, {
-
-      headers: {
-        "x-api-key": key
+    const response = await fetch(
+      `${API_URL}/status`,
+      {
+        headers: {
+          "x-api-key": key
+        }
       }
-
-    });
+    );
 
     if (response.ok) {
 
       API_KEY = key;
 
-      document.getElementById("loginBox").style.display = "none";
-      document.getElementById("dashboard").style.display = "block";
+      document.getElementById("loginBox")
+        .style.display = "none";
+
+      document.getElementById("dashboard")
+        .style.display = "block";
+
+      refreshStatus();
 
     } else {
 
@@ -213,83 +381,175 @@ async function login() {
 }
 
 
-async function sendOrder(type) {
+/* MT5 STATUS */
 
-  const symbol = document.getElementById("symbol").value;
+async function refreshStatus() {
 
-  const lot = Number(
-    document.getElementById("lot").value
-  );
+  try {
 
-  const response = await fetch(`${API_URL}/order`, {
+    const response = await fetch(
+      `${API_URL}/status`,
+      {
+        headers: {
+          "x-api-key": API_KEY
+        }
+      }
+    );
 
-    method: "POST",
+    const data = await response.json();
 
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": API_KEY
-    },
+    const status =
+      document.getElementById("mt5Status");
 
-    body: JSON.stringify({
-      type,
-      symbol,
-      lot
-    })
+    if (data.mt5 === "connected") {
 
-  });
+      status.innerText =
+        "🟢 MT5 Connected";
 
-  const data = await response.json();
+      status.className =
+        "status connected";
 
-  document.getElementById("result").innerText =
-    JSON.stringify(data, null, 2);
+    } else {
+
+      status.innerText =
+        "🔴 MT5 Disconnected";
+
+      status.className =
+        "status disconnected";
+
+    }
+
+  } catch (error) {
+
+    document.getElementById("mt5Status").innerText =
+      "⚠️ Connection Error";
+
+  }
 
 }
 
+
+/* BUY / SELL */
+
+async function sendOrder(type) {
+
+  const symbol =
+    document.getElementById("symbol").value;
+
+  const lot =
+    Number(document.getElementById("lot").value);
+
+  try {
+
+    const response = await fetch(
+      `${API_URL}/order`,
+      {
+
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": API_KEY
+        },
+
+        body: JSON.stringify({
+          type,
+          symbol,
+          lot
+        })
+
+      }
+    );
+
+    const data = await response.json();
+
+    document.getElementById("result").innerText =
+      JSON.stringify(data, null, 2);
+
+  } catch (error) {
+
+    document.getElementById("result").innerText =
+      "Connection error";
+
+  }
+
+}
+
+
+/* CLOSE ALL */
 
 async function closeAll() {
 
-  const response = await fetch(`${API_URL}/close-all`, {
+  try {
 
-    method: "POST",
+    const response = await fetch(
+      `${API_URL}/close-all`,
+      {
 
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": API_KEY
-    }
+        method: "POST",
 
-  });
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": API_KEY
+        }
 
-  const data = await response.json();
+      }
+    );
 
-  document.getElementById("result").innerText =
-    JSON.stringify(data, null, 2);
+    const data = await response.json();
+
+    document.getElementById("result").innerText =
+      JSON.stringify(data, null, 2);
+
+  } catch (error) {
+
+    document.getElementById("result").innerText =
+      "Connection error";
+
+  }
 
 }
 
+
+/* ROBOT */
 
 async function robot(action) {
 
-  const response = await fetch(`${API_URL}/robot`, {
+  try {
 
-    method: "POST",
+    const response = await fetch(
+      `${API_URL}/robot`,
+      {
 
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": API_KEY
-    },
+        method: "POST",
 
-    body: JSON.stringify({
-      action
-    })
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": API_KEY
+        },
 
-  });
+        body: JSON.stringify({
+          action
+        })
 
-  const data = await response.json();
+      }
+    );
 
-  document.getElementById("result").innerText =
-    JSON.stringify(data, null, 2);
+    const data = await response.json();
+
+    document.getElementById("result").innerText =
+      JSON.stringify(data, null, 2);
+
+  } catch (error) {
+
+    document.getElementById("result").innerText =
+      "Connection error";
+
+  }
 
 }
 
-</script></body>
-    </html>
+</script>
+
+</body>
+        </html>
