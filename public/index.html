@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Throne Controller</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111827;
+      color: white;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 5px;
+    }
+
+    .status {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #22c55e;
+    }
+
+    .card {
+      background: #1f2937;
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      border: none;
+      box-sizing: border-box;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      margin-top: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .buy {
+      background: #22c55e;
+      color: white;
+    }
+
+    .sell {
+      background: #ef4444;
+      color: white;
+    }
+
+    .close {
+      background: #f59e0b;
+      color: white;
+    }
+
+    .robot {
+      background: #3b82f6;
+      color: white;
+    }
+
+    #result {
+      margin-top: 15px;
+      padding: 12px;
+      background: #111827;
+      border-radius: 8px;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>👑 Throne Controller</h1>
+
+  <div class="status">
+    ● Controller Online
+  </div>
+
+  <div class="card">
+
+    <label>Symbol</label>
+    <input id="symbol" value="XAUUSD">
+
+    <label>Lot Size</label>
+    <input id="lot" type="number" value="0.01" step="0.01">
+
+    <button class="buy" onclick="sendOrder('BUY')">
+      🟢 BUY
+    </button>
+
+    <button class="sell" onclick="sendOrder('SELL')">
+      🔴 SELL
+    </button>
+
+  </div>
+
+  <div class="card">
+
+    <button class="close" onclick="closeAll()">
+      🛑 CLOSE ALL
+    </button>
+
+    <button class="robot" onclick="robot('START')">
+      ▶️ START ROBOT
+    </button>
+
+    <button class="robot" onclick="robot('STOP')">
+      ⏹️ STOP ROBOT
+    </button>
+
+    <div id="result">
+      Waiting for command...
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+
+const API_URL = "https://throne-controller.onrender.com";
+
+// API key will be added later
+const API_KEY = "";
+
+async function sendOrder(type) {
+
+  const symbol = document.getElementById("symbol").value;
+  const lot = Number(document.getElementById("lot").value);
+
+  try {
+
+    const response = await fetch(`${API_URL}/order`, {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": API_KEY
+      },
+
+      body: JSON.stringify({
+        type: type,
+        symbol: symbol,
+        lot: lot
+      })
+    });
+
+    const data = await response.json();
+
+    document.getElementById("result").innerText =
+      JSON.stringify(data, null, 2);
+
+  } catch (error) {
+
+    document.getElementById("result").innerText =
+      "Connection error: " + error.message;
+
+  }
+}
+
+
+async function closeAll() {
+
+  try {
+
+    const response = await fetch(`${API_URL}/close-all`, {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": API_KEY
+      }
+    });
+
+    const data = await response.json();
+
+    document.getElementById("result").innerText =
+      JSON.stringify(data, null, 2);
+
+  } catch (error) {
+
+    document.getElementById("result").innerText =
+      "Connection error: " + error.message;
+
+  }
+}
+
+
+async function robot(action) {
+
+  try {
+
+    const response = await fetch(`${API_URL}/robot`, {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": API_KEY
+      },
+
+      body: JSON.stringify({
+        action: action
+      })
+    });
+
+    const data = await response.json();
+
+    document.getElementById("result").innerText =
+      JSON.stringify(data, null, 2);
+
+  } catch (error) {
+
+    document.getElementById("result").innerText =
+      "Connection error: " + error.message;
+
+  }
+}
+
+</script>
+
+</body>
+  </html>
