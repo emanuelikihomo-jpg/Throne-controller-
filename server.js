@@ -4,9 +4,13 @@ const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// API security
+const API_KEY = process.env.THRONE_API_KEY;
+
 app.use(cors());
 app.use(express.json());
 
+// Health check — public
 app.get("/", (req, res) => {
   res.json({
     status: "online",
@@ -14,7 +18,29 @@ app.get("/", (req, res) => {
   });
 });
 
-app.get("/status", (req, res) => {
+// API key middleware
+function authenticate(req, res, next) {
+  const key = req.headers["x-api-key"];
+
+  if (!API_KEY) {
+    return res.status(500).json({
+      success: false,
+      message: "API key is not configured"
+    });
+  }
+
+  if (key !== API_KEY) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized"
+    });
+  }
+
+  next();
+}
+
+// MT5 status
+app.get("/status", authenticate, (req, res) => {
   res.json({
     status: "online",
     mt5: "disconnected",
@@ -22,7 +48,8 @@ app.get("/status", (req, res) => {
   });
 });
 
-app.post("/order", (req, res) => {
+// Send BUY / SELL order
+app.post("/order", authenticate, (req, res) => {
   const { type, symbol, lot } = req.body;
 
   if (!["BUY", "SELL"].includes(type)) {
@@ -46,7 +73,8 @@ app.post("/order", (req, res) => {
   });
 });
 
-app.post("/close-all", (req, res) => {
+// Close all trades
+app.post("/close-all", authenticate, (req, res) => {
   console.log("CLOSE ALL command received");
 
   res.json({
@@ -55,7 +83,8 @@ app.post("/close-all", (req, res) => {
   });
 });
 
-app.post("/robot", (req, res) => {
+// Start / Stop robot
+app.post("/robot", authenticate, (req, res) => {
   const { action } = req.body;
 
   if (!["START", "STOP"].includes(action)) {
