@@ -1,1 +1,12 @@
-
+{
+  "name": "throne-hub-mt5-controller",
+  "version": "1.0.0",
+  "description": "Throne Hub MT5 Controller backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
